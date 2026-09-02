@@ -9,6 +9,9 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Insert ping row
         run: |
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -24,7 +27,6 @@ jobs:
 
       - name: Delete oldest rows over 100
         run: |
-          # 100번째로 오래된 행의 id를 찾아서, 그보다 오래된 것들을 삭제
           CUTOFF_ID=$(curl -s \
             "${{ secrets.SUPABASE_URL }}/rest/v1/ping?select=id&order=pinged_at.desc&limit=1&offset=99" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
@@ -40,3 +42,10 @@ jobs:
               -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
             echo "🗑️ Delete response: $DEL"
           fi
+
+      - name: Keep workflow alive
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git commit --allow-empty -m "keepalive: $(date -u +"%Y-%m-%d")"
+          git push
